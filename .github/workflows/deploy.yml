@@ -2,15 +2,14 @@ name: Deploy HTML Site
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: Setup SSH
@@ -20,6 +19,12 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy HTML to EC2
+      - name: Debug SSH Key (Optional)
         run: |
-          scp -r * ubuntu@${{ secrets.EC2_HOST }}:/var/www/html/your-html-site/
+          ls -l ~/.ssh
+          cat ~/.ssh/id_rsa | head -n 2
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} "echo '✅ SSH is working'"
+
+      - name: Deploy Files to EC2
+        run: |
+          scp -r * ubuntu@${{ secrets.EC2_HOST }}:/var/www/html/
