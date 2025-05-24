@@ -15,16 +15,21 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: Debug SSH Key (Optional)
         run: |
           ls -l ~/.ssh
-          cat ~/.ssh/id_rsa | head -n 2
+          head -n 2 ~/.ssh/id_rsa
           ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} "echo '✅ SSH is working'"
 
-      - name: Deploy Files to EC2
+      - name: Copy Files to EC2 (Temporary Directory)
         run: |
-          scp -r * ubuntu@${{ secrets.EC2_HOST }}:/var/www/html/
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} "mkdir -p ~/deploy-temp"
+          scp -i ~/.ssh/id_rsa -r * ubuntu@${{ secrets.EC2_HOST }}:~/deploy-temp/
+
+      - name: Move Files to /var/www/html (With sudo)
+        run: |
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} "sudo mv ~/deploy-temp/* /var/www/html/"
